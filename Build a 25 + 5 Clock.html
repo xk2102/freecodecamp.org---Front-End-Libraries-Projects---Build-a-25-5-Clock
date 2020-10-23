@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Build a 25 + 5 Clock</title>
+    <link rel="shortcut icon" href="#" />
+    <!-- REACT -->
+    <script src="https://unpkg.com/react@16.12.0/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16.12.0/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.8.3/babel.js"></script>
+    <!--GOOGLE FONTS-->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <!--FA-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css">
+
+    <style>
+        body {
+            margin-top: 100px;
+            font-family: "Roboto Mono", monospace;
+            background-color: cadetblue;
+        }
+        .container {
+            margin: auto;
+            padding-top: -20px;
+            padding-bottom: 20px;
+            width: 50vw;
+
+            display: flex;
+            flex-direction: column;
+            border: 4px solid black;
+            border-radius: 5%;
+            box-shadow: 10px 10px 25px rgb(44, 57, 58);
+            
+            
+        }
+        #break-label, #session-label, #timer-label {
+            border:0px solid grey;
+            text-align: center;
+        }
+        button {
+            background-color: cadetblue;
+            border: 0px;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.freecodecamp.org/testable-projects-fcc/v1/bundle.js"></script>
+    <div id="root"></div>
+    <audio id="beep" preload="auto" 
+    src="https://raw.githubusercontent.com/freeCodeCamp/cdn/master/build/testable-projects-fcc/audio/BeepSound.wav" />
+</body>
+</html>
+
+<script type="text/babel">
+    const audio = document.getElementById('beep');
+
+    class App extends React.Component {
+            constructor(props) {
+                super(props);
+                this.state = {
+                    break: 5,
+                    session: 25,
+                    timer: 1500,
+                    currentPhase: 'Session',
+                    isRunning: false, 
+                    intervalID: undefined
+                }
+            }
+
+            handleReset = () => {
+                this.setState({
+                    break: 5,
+                    session: 25,
+                    timer: 1500,
+                    currentPhase: 'Session',
+                    isRunning: false, 
+                }, () => { clearInterval(this.state.intervalID); audio.pause();audio.currentTime = 0;});
+               
+            };
+
+            
+            handleBreakDecrementClick = () => {
+                if (!this.state.isRunning){
+                    this.setState({
+                        break: (this.state.break >= 2) ? this.state.break - 1 : this.state.break
+                    });
+                }//if
+            };//break decrement
+            handleBreakInrementClick = () => {
+                if (!this.state.isRunning){
+                    this.setState({
+                        break: (this.state.break <= 59) ? this.state.break + 1 : this.state.break
+                    });
+                }//if
+            };//break increment
+            handleSessionDecrementClick = () => {
+                if (!this.state.isRunning){
+                    this.setState({
+                        session: (this.state.session >= 2) ? this.state.session - 1 : this.state.session
+                    }, () => {this.setState({timer: this.state.session*60});});
+                }//if
+            };//session decrement
+            handleSessionIncrementClick = () => {
+                if (!this.state.isRunning){
+                    this.setState({
+                        session: (this.state.session <= 59) ? this.state.session + 1 : this.state.session
+                        }, () => {this.setState({timer: this.state.session*60});});
+                };//if
+            };//session increment
+
+            toggleIsRunning = () => {
+                this.setState({
+                    isRunning: this.state.isRunning ? false : true
+                }, () => {
+                        if (this.state.isRunning) {
+                            console.log('is Running')
+                            this.state.intervalID = setInterval(this.reduceTimer, 1000); 
+                            
+
+                        }else {
+                            console.log('stopped Running')
+                            clearInterval(this.state.intervalID);
+                            //In order to keep a handle on the intervalId, you would need to save it in state
+                            //Otherwise, it won't survive the render cycle.
+                        }
+                    });
+            };
+
+
+
+            reduceTimer = () => {
+                this.setState({
+                    timer: this.state.timer - 1
+                });
+            };
+
+            componentDidMount() {
+                document.getElementById('start_stop').addEventListener('click', this.handleClick);
+                document.getElementById('reset').addEventListener('click', this.handleReset);
+                document.getElementById('break-decrement').addEventListener('click', this.handleBreakDecrementClick);
+                document.getElementById('break-increment').addEventListener('click', this.handleBreakInrementClick);
+                document.getElementById('session-decrement').addEventListener('click', this.handleSessionDecrementClick);
+                document.getElementById('session-increment').addEventListener('click', this.handleSessionIncrementClick);
+                document.getElementById('start_stop').addEventListener('click', this.toggleIsRunning);
+                
+            }
+
+            componentDidUpdate() {
+                if (this.state.currentPhase === 'Session' && this.state.timer === -1){
+                    audio.play();
+                    this.setState({
+                        timer: this.state.break*60,
+                        currentPhase: 'Break'
+                    });
+                }//if
+                if (this.state.currentPhase === 'Break' && this.state.timer === -1){
+                    audio.play();
+                    this.setState({
+                        timer: this.state.session*60,
+                        currentPhase: 'Session'
+                    });
+                }//if
+
+            }
+
+
+
+            secondsToMmss = (seconds) => {
+                
+                let min = Math.floor(seconds / 60);
+                let sec = seconds % 60;
+                
+                min = min < 10 ? '0' + min : min;
+                sec = sec < 10 ? '0' + sec : sec;
+                
+                return min + ':' + sec;
+            };
+
+
+            render(){
+                return (
+                    <div className="container">
+                        <div id="break-label">
+                            <h3>Break Length</h3>
+                            <button id="break-decrement"><i className="fas fa-minus"></i></button>
+                            <span id="break-length">{this.state.break}</span>
+                            <button id="break-increment"><i className="fas fa-plus"></i></button>
+                        </div>
+                        <div id="session-label">
+                            <h3>Session Length</h3>
+                            <button id="session-decrement"><i className="fas fa-minus"></i></button>
+                            <span id="session-length">{this.state.session}</span>
+                            <button id="session-increment"><i className="fas fa-plus"></i></button>
+                        </div>
+                        <div id="timer-label">
+                            <h3>{this.state.currentPhase}</h3>
+                            <p><span id="time-left">{this.secondsToMmss(this.state.timer)}</span></p>
+                            <button id="start_stop">{this.state.isRunning ? <i className="fas fa-pause"></i> : <i className="fas fa-play"></i>}</button>
+                            <button id="reset"><i className="fas fa-sync"></i></button>
+                        </div>
+                        
+                    </div>
+                    
+                )//return
+            }//render
+    }//App
+
+
+    ReactDOM.render(<App />, document.getElementById('root'));
+</script>
